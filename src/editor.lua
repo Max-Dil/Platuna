@@ -355,7 +355,12 @@ local function placeBlock(x, y)
         blockData.body = nil
     end
 
+    local isSave = false
     local function saveBlock()
+        if isSave then
+            return
+        end
+        isSave = true
         if not m.MapData[key] then
             m.MapData[key] = {}
         end
@@ -395,9 +400,22 @@ local function placeBlock(x, y)
             blockData.text = text
             saveBlock()
         end, 'Ввведите текст')
+    elseif currentBlock.sheet == 2 and currentBlock.frame == 23 then
+        blockData.body = nil
+        inputNumber(function (num)
+            blockData.gravity = num
+            saveBlock()
+        end, 'Ввведите силу гравитации')
+    elseif currentBlock.sheet == 2 and (currentBlock.frame == 22 or currentBlock.frame == 21 or currentBlock.frame == 20 or currentBlock.frame == 42) then
+        blockData.body = nil
+        inputNumber(function (num)
+            blockData.distance = num
+            saveBlock()
+        end, 'Ввведите дальность орудия')
     else
         saveBlock()
     end
+    saveBlock()
 end
 
 local function stopMovement()

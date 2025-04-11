@@ -111,7 +111,7 @@ do
             hpText.x, hpText.y = image.x, image.y - 50
             hpText.text = image.health .. " / " .. image.maxHealth
         end)
-    
+
         local damageGroup = Level:newGroup()
         image.showDamage = function (bullet)
             if damageGroup then
@@ -377,6 +377,21 @@ local TILESET_CONFIG = {
         end},
         [3] = {restitution = 1},
         [4] = {heightScale = 3, offsetY = 2.5, restitution = 1},
+        [5] = {main = function (image, xScale, yScale, elem)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' and (e.other == Player or e.target == Player) then
+                    local angle = elem.angle or 0
+                    local gx, gy = World.world:getGravity()
+                    local gravityMagnitude = math.sqrt(gx^2 + gy^2)
+                    if gravityMagnitude == 0 then gravityMagnitude = 500 end
+                    local rad = math.rad((angle + 90) % 360)
+                    local newGx = math.cos(rad) * gravityMagnitude
+                    local newGy = math.sin(rad) * gravityMagnitude
+                    World.world:setGravity(-newGx, -newGy)
+                    return true
+                end
+            end)
+        end},
         [6] = {main = function(image)
             image.fixture:setSensor(true)
             image:addEvent('collision', function(e)
@@ -523,6 +538,233 @@ local TILESET_CONFIG = {
             image.isVisible = false
             Level:newPrint(elem.text, image.x, image.y, 'Venus.ttf')
         end},
+        [20] = {main = function(image, xScale, yScale, elem)
+            local distance = elem.distance or 1000
+            local shootDelay = 2
+            local bulletSize = 40
+            local bulletSpeed = 400
+            local bulletDamage = 50
+
+            mane.timer.new(shootDelay * 1000, function()
+                if not image or not image.x then return end
+                local bullet = BulletGroup:newCircle(image.x, image.y, bulletSize / 2)
+                bullet.name = 'bullet'
+                bullet.typeComand = 'enemy'
+                bullet:setColor(0.5, 0.5, 0.5)
+                bullet.damage = bulletDamage
+                World:addBody(bullet, 'dynamic')
+                bullet.fixture:setCategory(5)
+                bullet.fixture:setMask(4, 5)
+                bullet:setGravityScale(0, 0)
+
+                local angle = math.rad(0)
+                local bulletVelocityX = math.cos(angle) * bulletSpeed
+                local bulletVelocityY = math.sin(angle) * bulletSpeed
+                bullet.angle = 0
+
+                local lifetimeSeconds = distance / bulletSpeed
+                local elapsedTime = 0
+
+                local bulletTimer
+                bulletTimer = mane.timer.new(0, function(dt)
+                    if not bullet then return end
+                    elapsedTime = elapsedTime + dt
+                    bullet.x = bullet.x + bulletVelocityX * dt
+                    bullet.y = bullet.y + bulletVelocityY * dt
+                    if elapsedTime >= lifetimeSeconds then
+                        bullet:remove()
+                        bulletTimer:cancel()
+                        bulletTimer = nil
+                        bullet = nil
+                    end
+                end, 0, 'Game')
+
+                bullet.timer = bulletTimer
+
+                bullet:addEvent('collision', function(e)
+                    if e.phase ~= 'began' then return false end
+                    if e.target == Player or e.other == Player then
+                        Player.health = Player.health - bullet.damage
+                        Player.showDamage(bullet)
+                        if Player.health <= 0 then
+                            Reload()
+                        end
+                        bullet:remove()
+                        if bullet.timer then
+                            bullet.timer:cancel()
+                        end
+                        return true
+                    elseif e.target ~= image and e.other ~= image then
+                        mane.timer.new(10, function()
+                            if bullet then
+                                bullet:remove()
+                            end
+                            if bullet.timer then
+                                bullet.timer:cancel()
+                                bulletTimer = nil
+                            end
+                        end, 1, 'Game')
+                    end
+                end)
+            end, 0, 'Game')
+        end},
+        [21] = {main = function(image, xScale, yScale, elem)
+            local distance = elem.distance or 1000
+            local shootDelay = 2
+            local bulletSize = 40
+            local bulletSpeed = 400
+            local bulletDamage = 50
+
+            mane.timer.new(shootDelay * 1000, function()
+                if not image or not image.x then return end
+                local bullet = BulletGroup:newCircle(image.x, image.y, bulletSize / 2)
+                bullet.name = 'bullet'
+                bullet.typeComand = 'enemy'
+                bullet:setColor(0.5, 0.5, 0.5)
+                bullet.damage = bulletDamage
+                World:addBody(bullet, 'dynamic')
+                bullet.fixture:setCategory(5)
+                bullet.fixture:setMask(4, 5)
+                bullet:setGravityScale(0, 0)
+
+                local angle = math.rad(180)
+                local bulletVelocityX = math.cos(angle) * bulletSpeed
+                local bulletVelocityY = math.sin(angle) * bulletSpeed
+                bullet.angle = 180
+
+                local lifetimeSeconds = distance / bulletSpeed
+                local elapsedTime = 0
+
+                local bulletTimer
+                bulletTimer = mane.timer.new(0, function(dt)
+                    if not bullet then return end
+                    elapsedTime = elapsedTime + dt
+                    bullet.x = bullet.x + bulletVelocityX * dt
+                    bullet.y = bullet.y + bulletVelocityY * dt
+                    if elapsedTime >= lifetimeSeconds then
+                        bullet:remove()
+                        bulletTimer:cancel()
+                        bulletTimer = nil
+                        bullet = nil
+                    end
+                end, 0, 'Game')
+        
+                bullet.timer = bulletTimer
+        
+                bullet:addEvent('collision', function(e)
+                    if e.phase ~= 'began' then return false end
+                    if e.target == Player or e.other == Player then
+                        Player.health = Player.health - bullet.damage
+                        Player.showDamage(bullet)
+                        if Player.health <= 0 then
+                            Reload()
+                        end
+                        bullet:remove()
+                        if bullet.timer then
+                            bullet.timer:cancel()
+                        end
+                        return true
+                    elseif e.target ~= image and e.other ~= image then
+                        mane.timer.new(10, function()
+                            if bullet then
+                                bullet:remove()
+                            end
+                            if bullet.timer then
+                                bullet.timer:cancel()
+                                bulletTimer = nil
+                            end
+                        end, 1, 'Game')
+                    end
+                end)
+            end, 0, 'Game')
+        end},
+        [22] = {main = function(image, xScale, yScale, elem)
+            local distance = elem.distance or 1000
+            local shootDelay = 0.8
+            local bulletSize = {30, 10}
+            local bulletSpeed = 600
+            local bulletDamage = 10
+
+            mane.timer.new(shootDelay * 1000, function()
+                if not image or not image.x then return end
+                local bullet = BulletGroup:newRect(image.x, image.y, bulletSize[1], bulletSize[2])
+                bullet.name = 'bullet'
+                bullet.typeComand = 'enemy'
+                bullet:setColor(0.8, 0.3, 0.3)
+                bullet.damage = bulletDamage
+                World:addBody(bullet, 'dynamic')
+                bullet.fixture:setCategory(5)
+                bullet.fixture:setMask(4, 5)
+                bullet:setGravityScale(0, 0)
+
+                local angle = math.rad(((elem.angle or 0) + 270) % 360)
+                local bulletVelocityX = math.cos(angle) * bulletSpeed
+                local bulletVelocityY = math.sin(angle) * bulletSpeed
+                bullet.angle = ((elem.angle or 0) + 270) % 360
+
+                local lifetimeSeconds = distance / bulletSpeed
+                local elapsedTime = 0
+
+                local bulletTimer
+                bulletTimer = mane.timer.new(0, function(dt)
+                    if not bullet then return end
+                    elapsedTime = elapsedTime + dt
+                    bullet.x = bullet.x + bulletVelocityX * dt
+                    bullet.y = bullet.y + bulletVelocityY * dt
+                    if elapsedTime >= lifetimeSeconds then
+                        bullet:remove()
+                        bulletTimer:cancel()
+                        bulletTimer = nil
+                        bullet = nil
+                    end
+                end, 0, 'Game')
+
+                bullet.timer = bulletTimer
+
+                bullet:addEvent('collision', function(e)
+                    if e.phase ~= 'began' then return false end
+                    if e.target == Player or e.other == Player then
+                        Player.health = Player.health - bullet.damage
+                        Player.showDamage(bullet)
+                        if Player.health <= 0 then
+                            Reload()
+                        end
+                        bullet:remove()
+                        if bullet.timer then
+                            bullet.timer:cancel()
+                        end
+                        return true
+                    elseif e.target ~= image and e.other ~= image then
+                        mane.timer.new(10, function()
+                            if bullet then
+                                bullet:remove()
+                            end
+                            if bullet.timer then
+                                bullet.timer:cancel()
+                                bulletTimer = nil
+                            end
+                        end, 1, 'Game')
+                    end
+                end)
+            end, 0, 'Game')
+        end},
+        [23] = {main = function (image, xScale, yScale, elem)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' and (e.other == Player or e.target == Player) then
+                    local gravityMagnitude = elem.gravity or 500
+                    local gx, gy = World.world:getGravity()
+                    local currentMagnitude = math.sqrt(gx^2 + gy^2)
+                    if currentMagnitude > 0 then
+                        gx = (gx / currentMagnitude) * gravityMagnitude
+                        gy = (gy / currentMagnitude) * gravityMagnitude
+                    else
+                        gx, gy = 0, gravityMagnitude
+                    end
+                    World.world:setGravity(gx, gy)
+                    return true
+                end
+            end)
+        end},
         [26] = {main = function(image)
             CountEnemy = CountEnemy + 1
             image:addEvent('collision', function(e)
@@ -593,6 +835,89 @@ local TILESET_CONFIG = {
                     end
                 end
             end)
+        end},
+        [42] = {main = function(image, xScale, yScale, elem)
+            local distance = elem.distance or 1000
+            local shootDelay = 2
+            local bulletSize = {30, 10}
+            local bulletSpeed = 700
+            local bulletDamage = 10
+            local spreadAngle = 10
+
+            image:addEvent('update', function(e)
+                if not image or not Player or not Player.x then return end
+                local angle = math.atan2(Player.y - image.y, Player.x - image.x)
+                image.angle = (((angle / math.pi) * 180)+90) % 360
+            end)
+
+            local function createBullet(angleOffset)
+                local bullet = BulletGroup:newRect(image.x, image.y, bulletSize[1], bulletSize[2])
+                bullet.name = 'bullet'
+                bullet.typeComand = 'enemy'
+                bullet:setColor(0.8, 0.3, 0.3)
+                bullet.damage = bulletDamage
+                World:addBody(bullet, 'dynamic')
+                bullet.fixture:setCategory(5)
+                bullet.fixture:setMask(4, 5)
+                bullet:setGravityScale(0, 0)
+
+                local targetAngle = math.atan2(Player.y - image.y, Player.x - image.x) + math.rad(angleOffset)
+                local bulletVelocityX = math.cos(targetAngle) * bulletSpeed
+                local bulletVelocityY = math.sin(targetAngle) * bulletSpeed
+                bullet.angle = (targetAngle / math.pi) * 180
+
+                local lifetimeSeconds = distance / bulletSpeed
+                local elapsedTime = 0
+                local bulletTimer 
+                bulletTimer= mane.timer.new(0, function(dt)
+                    if not bullet then return end
+                    elapsedTime = elapsedTime + dt
+                    bullet.x = bullet.x + bulletVelocityX * dt
+                    bullet.y = bullet.y + bulletVelocityY * dt
+                    if elapsedTime >= lifetimeSeconds then
+                        bullet:remove()
+                        bulletTimer:cancel()
+                        bulletTimer = nil
+                        bullet = nil
+                    end
+                end, 0, 'Game')
+
+                bullet.timer = bulletTimer
+
+                bullet:addEvent('collision', function(e)
+                    if e.phase ~= 'began' then return false end
+                    if e.target == Player or e.other == Player then
+                        Player.health = Player.health - bullet.damage
+                        Player.showDamage(bullet)
+                        if Player.health <= 0 then
+                            Reload()
+                        end
+                        bullet:remove()
+                        if bullet.timer then
+                            bullet.timer:cancel()
+                        end
+                        return true
+                    elseif e.target ~= image and e.other ~= image then
+                        mane.timer.new(10, function()
+                            if bullet then
+                                bullet:remove()
+                            end
+                            if bullet.timer then
+                                bullet.timer:cancel()
+                                bulletTimer = nil
+                            end
+                        end, 1, 'Game')
+                    end
+                end)
+            end
+
+            mane.timer.new(shootDelay * 1000, function()
+                if not image or not image.x or not Player or not Player.x then return end
+                createBullet(-spreadAngle * 1.5)
+                mane.timer.new(50, function() createBullet(-spreadAngle * 0.5) end, 1, 'Game')
+                mane.timer.new(100, function() createBullet(spreadAngle * 0.5) end, 1, 'Game')
+                mane.timer.new(150, function() createBullet(spreadAngle * 1.5) end, 1, 'Game')
+            end, 0, 'Game')
         end},
         [43] = {main = function (image, xScale, yScale, elem)
             CountEnemy = CountEnemy + 1

@@ -87,11 +87,12 @@ m.run = function ()
         isMin = {},
         playerSize = 'big',
         checkpoint = {mane.display.centerX, mane.display.centerY},
-        tpMap = {}
+        tpMap = {},
     }
     Game = mane.display.game:newGroup()
     Map = Game:newGroup()
-    World = mane.physics.newWorld(0, 500)
+    World = mane.physics.newWorld(0, 500, true)
+    World.world:setGravity(0, 500)
 
     BulletGroup = Map:newGroup()
 
@@ -147,7 +148,8 @@ m.run = function ()
 
         mane.timer.cancelAll('Game')
         World:remove()
-        World = mane.physics.newWorld(0, 500)
+        World = mane.physics.newWorld(0, 500, true)
+        World.world:setGravity(0, 500)
         Player.damageGroup:removeObjects()
         Player.health = Player.maxHealth
         Player.x, Player.y = mane.display.centerX, mane.display.centerY
