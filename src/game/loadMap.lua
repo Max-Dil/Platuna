@@ -1,0 +1,728 @@
+local function getScaleSafe(img, desiredWidth, desiredHeight, originalWidth, originalHeight)
+    local originalWidth = originalWidth or img:getWidth()
+    local originalHeight = originalHeight or img:getHeight()
+
+    local xScale = (originalWidth > 0) and desiredWidth / originalWidth or 0
+    local yScale = (originalHeight > 0) and desiredHeight / originalHeight or 0
+
+    return xScale, yScale
+end
+
+local spriteSheet = {}
+spriteSheet[1] = mane.graphics.newSpriteSheet('res/images/blocks.png', 10, 10, 56, 16)
+spriteSheet[2] = mane.graphics.newSpriteSheet('res/images/blocks2.png', 10, 10, 43, 12)
+spriteSheet[3] = mane.graphics.newSpriteSheet('res/images/blocks3.png', 10, 10, 36, 20)
+
+local function predictPlayerPosition(image, bulletSpeed)
+    local distance = love.distance(image.x, image.y, Player.x, Player.y)
+    local timeToHit = distance / bulletSpeed
+    local playerVx, playerVy = Player:getLinearVelocity()
+    local predictedX = Player.x + playerVx * timeToHit
+    local predictedY = Player.y + playerVy * timeToHit
+    return predictedX, predictedY
+end
+
+local function hasLineOfSight(image, targetX, targetY)
+    local hitObstacle = false
+
+    local function rayCastCallback(fixture, x, y, xn, yn, fraction)
+        local obj = fixture:getUserData()
+        if obj ~= image and obj ~= Player then
+            hitObstacle = true
+            return 0
+        end
+        return 1
+    end
+
+    World.world:rayCast(image.x, image.y, targetX, targetY, rayCastCallback)
+
+    return not hitObstacle
+end
+
+local weapons = {
+    Piston = {
+        image = 'res/images/weapons/Piston.png',
+        shootDelay = 0.34,
+        bulletLifetime = 70,
+        force = 250,
+        bulletSpeed = 650,
+        attackDistance = 820,
+        distance = 5000,
+        damage = 10
+    },
+    AK47 = {
+        image = 'res/images/weapons/AK47.png',
+        shootDelay = 0.22,
+        bulletLifetime = 70,
+        force = 180,
+        bulletSpeed = 600,
+        attackDistance = 700,
+        distance = 5000,
+        damage = 8
+    },
+    MP40 = {
+        image = 'res/images/weapons/MP40.png',
+        shootDelay = 0.1,
+        bulletLifetime = 60,
+        force = 70,
+        bulletSpeed = 400,
+        attackDistance = 400,
+        distance = 5000,
+        damage = 4
+    },
+    Snipe = {
+        image = 'res/images/weapons/Snipe.png',
+        shootDelay = 1,
+        bulletLifetime = 200,
+        force = 650,
+        bulletSpeed = 1800,
+        attackDistance = 5000,
+        distance = 10000,
+        damage = 50
+    },
+    Shotgun = {
+        image = 'res/images/weapons/Shotgun.png',
+        shootDelay = 0.85,
+        bulletLifetime = 25,
+        force = 100,
+        bulletSpeed = 800,
+        attackDistance = 336,
+        distance = 5000,
+        damage = 8
+    }
+}
+
+local enemy = {}
+do
+    enemy.addHpEnemy =  function(image)
+        image.health = 100
+        image.maxHealth = 100
+
+        local hpText = Level:newPrint(
+            image.health .. " / " .. image.maxHealth,
+            'res/Venus.ttf',
+            image.x,
+            image.y - 50,
+            15
+        )
+        hpText:toFront()
+        hpText:setColor(0,1,0)
+        image:addEvent('update', function(e)
+            hpText.x, hpText.y = image.x, image.y - 50
+            hpText.text = image.health .. " / " .. image.maxHealth
+        end)
+    
+        local damageGroup = Level:newGroup()
+        image.showDamage = function (bullet)
+            if damageGroup then
+                local damageText = damageGroup:newPrint(
+                    "-" .. bullet.damage,
+                    'res/Venus.ttf',
+                    image.x+ math.random(-30, 30),
+                    image.y - 50+ math.random(-0, -30),
+                    15
+                )
+                damageText:setColor(1, 0, 0)
+                mane.timer.new(500, function()
+                    if damageGroup then
+                        damageGroup:removeObjects()
+                    end
+                end, 1, 'Game')
+            end
+        end
+        return hpText, damageGroup
+    end
+
+    local createBullet = function(x, y, move, image, elem)
+        local bullet = BulletGroup:newRect(image.x, image.y, 30, 10)
+        bullet.name = 'bullet'
+        bullet.typeComand = 'enemy'
+        bullet:setColor(0.8, 0.3, 0.3)
+        bullet.damage = weapons[elem.weapon].damage
+        World:addBody(bullet, 'dynamic')
+        --bullet.fixture:setSensor(true)
+        bullet.fixture:setCategory(5)
+        bullet.fixture:setMask(4, 5)
+        bullet:setGravityScale(0, 0)
+
+        local angle = math.atan2(y - image.y, x - image.x)
+        local angleDegrees = (angle / math.pi) * 180
+        if move then
+            if image.type == 'ghost' then
+                angleDegrees = (angleDegrees + 180) % 360
+            else
+                if image.x < x then
+                    angleDegrees = (angleDegrees + 145) % 360
+                else
+                    angleDegrees = (angleDegrees + 225) % 360
+                end
+            end
+        end
+        angle = (angleDegrees / 180) * math.pi
+
+        local bulletSpeed = weapons[elem.weapon].bulletSpeed
+        local bulletVelocityX = math.cos(angle) * bulletSpeed
+        local bulletVelocityY = math.sin(angle) * bulletSpeed
+
+        bullet.angle = (angle / math.pi) * 180
+
+        local lifetimeSeconds = weapons[elem.weapon].bulletLifetime / 60
+        local elapsedTime = 0
+
+        local bulletTimer
+        bulletTimer = mane.timer.new(0, function(dt)
+            elapsedTime = elapsedTime + dt
+            bullet.x = bullet.x + bulletVelocityX * dt
+            bullet.y = bullet.y + bulletVelocityY * dt
+            if elapsedTime >= lifetimeSeconds then
+                bullet:remove()
+                bulletTimer:cancel()
+                bulletTimer = nil
+                bullet = nil
+            end
+        end, 0, 'Game')
+
+        bullet.timer = bulletTimer
+
+        bullet:addEvent('collision', function(e)
+            if e.phase ~= 'began' then
+                return false
+            end
+            if e.target == Player or e.other == Player then
+                Player.health = Player.health - bullet.damage
+                Player.showDamage(bullet)
+                if Player.health <= 0 then
+                    Reload()
+                end
+                bullet:remove()
+                if bullet.timer then
+                    bullet.timer:cancel()
+                end
+                return true
+            else
+                if e.target ~= image and e.other ~= image and not (e.other.name == 'bullet' and e.target.name == 'bullet') then
+                    mane.timer.new(10, function()
+                        if bullet then
+                            bullet:remove()
+                        end
+                        if bulletTimer then
+                            bulletTimer:cancel()
+                            bulletTimer = nil
+                        end
+                    end, 1, 'Game')
+                end
+            end
+        end)
+
+        image.body:setPosition(image.x - 1, image.y)
+
+        local force = weapons[elem.weapon].force
+        local vx, vy = image:getLinearVelocity()
+        image:setLinearVelocity(vx - (math.cos(angle) * force), vy - (math.sin(angle) * force))
+
+        image.body:setPosition(image.x + 1, image.y)
+    end
+
+    enemy.newAttack = function(infers, image, elem)
+        local targetX, targetY = predictPlayerPosition(image, weapons[elem.weapon].bulletSpeed)
+
+        if infers == nil and not hasLineOfSight(image, targetX, targetY) and not image.mad then
+            targetX, targetY = Player.x, Player.y
+            if not hasLineOfSight(image, targetX, targetY) then
+                if math.random() < 0.2 + (image.maxHealth - image.health)/1000 then
+                    enemy.newAttack(true, image, elem)
+                elseif math.random() < 0.2 + (image.maxHealth - image.health)/1000 then
+                    enemy.newAttack(false, image, elem)
+                else
+                    image.moveTimer:setTime(100)
+                end
+                return
+            end
+        end
+        if image.mad then
+            image.mad = nil
+        end
+
+        if infers then
+            targetX, targetY = Player.x, Player.y
+            local angle = math.atan2(targetY - image.y, targetX - image.x)
+            local angleDegrees = (angle / math.pi) * 180
+            if image.x < Player.x then
+                angleDegrees = (angleDegrees + 145) % 360
+            else
+                angleDegrees = (angleDegrees + 225) % 360
+            end
+            angle = (angleDegrees / 180) * math.pi
+            image.targetX = image.x + math.cos(angle) * 100
+            image.targetY = image.y + math.sin(angle) * 100
+        else
+            image.targetX = targetX
+            image.targetY = targetY
+        end
+
+        targetX, targetY = targetX + math.random(-10, 10), targetY + math.random(-10, 10)
+        if elem.weapon == 'Shotgun' then
+            local spread = 0.08
+            local baseAngle = math.atan2(targetY - image.y, targetX - image.x)
+            for i = -3, 3 do
+                local angleOffset = i * spread
+                local shotAngle = baseAngle + angleOffset
+                local spreadX = image.x + math.cos(shotAngle) * 10
+                local spreadY = image.y + math.sin(shotAngle) * 10
+                createBullet(spreadX, spreadY, infers, image, elem)
+            end
+        else
+            createBullet(targetX, targetY, infers, image, elem)
+        end
+    end
+
+    enemy.addWeponEnemy = function (image, elem)
+        image.weaponObject = Level:newImage(weapons[elem.weapon].image, image.x, image.y, 1.25, 1.25)
+
+        image.targetX = 0
+        image.targetY = 0
+        image.weaponObject:addEvent('update', function(e)
+            if not image or not image.x then
+                if image.weaponObject then
+                    image.weaponObject:remove()
+                    image.weaponObject = nil
+                end
+                return
+            end
+            local targetX, targetY = image.targetX, image.targetY
+            local angle = math.atan2(targetY - image.y, targetX - image.x)
+
+            local offsetX = 20 * math.cos(angle)
+            local offsetY = 20 * math.sin(angle)
+            image.weaponObject.x = image.x + offsetX
+            image.weaponObject.y = image.y + offsetY
+
+            image.weaponObject.angle = (angle / math.pi) * 180
+
+            if targetX < image.x then
+                image.weaponObject.yScale = -1.25
+            else
+                image.weaponObject.yScale = 1.25
+            end
+            image.weaponObject.xScale = 1.25
+        end)
+    end
+
+    enemy.addRipEnemy = function (image, hpText, damageGroup)
+        image:addEvent('collision', function(e)
+            if e.phase == 'began' then
+                local bullet = (e.other.name == 'bullet' and e.other) or (e.target.name == 'bullet' and e.target) or false
+                if bullet and bullet.typeComand == 'Player' then
+                    if image.health <= 0 then
+                        if image.weaponObject then
+                            image.weaponObject:remove()
+                            image.weaponObject = nil
+                        end
+                        if image.moveTimer then
+                            image.moveTimer:cancel()
+                            image.moveTimer = nil
+                        end
+                        if hpText then
+                            hpText:remove()
+                            hpText = nil
+                        end
+                        if damageGroup then
+                            damageGroup:remove()
+                            damageGroup = nil
+                        end
+                        if image then
+                            image:remove()
+                            CountEnemy = CountEnemy - 1
+                        end
+                        image = nil
+
+                        if CountEnemy <= 0 then
+                            Win()
+                            return true
+                        end
+                        return true
+                    end
+                    return true
+                end
+            end
+        end)
+    end
+end
+
+local TILESET_CONFIG = {
+    [1] = {
+        [10] = {heightScale = 3, offsetY = 2.5},
+        [11] = {heightScale = 3, offsetY = 2.5},
+        [12] = {heightScale = 3, offsetY = 2.5}
+    },
+    [2] = {
+        [1] = {heightScale = 4, main = function(image)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' and (e.other == Player or e.target == Player) then
+                    Reload()
+                    return true
+                end
+            end)
+        end},
+        [2] = {bodyRadius = 3.7, main = function(image)
+            image:addEvent('update', function(e)
+                image:rotate(61 * e.dt)
+            end)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' and (e.other == Player or e.target == Player) then
+                    Reload()
+                    return true
+                end
+            end)
+        end},
+        [3] = {restitution = 1},
+        [4] = {heightScale = 3, offsetY = 2.5, restitution = 1},
+        [6] = {main = function(image)
+            image.fixture:setSensor(true)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' and (e.other == Player or e.target == Player) then
+                    if Player.size == 'big' then
+                        Player.size = 'min'
+                        Scenes.game.save.playerSize = 'min'
+                        Player.xScale = 2.5
+                        Player.yScale = 2.5
+                        mane.timer.new(1, function()
+                            Player:removeBody()
+                            World:addBody(Player, 'dynamic', {
+                                shape = "rect",
+                                width = Player.image:getWidth() * 2.5,
+                                height = Player.image:getHeight() * 2.5
+                            })
+                            Player:setFixedRotation(true)
+
+                            for i = 1, #Scenes.game.save.isBig, 1 do
+                                Scenes.game.save.isBig[i].fixture:setSensor(false)
+                            end
+                            for i = 1, #Scenes.game.save.isMin, 1 do
+                                Scenes.game.save.isMin[i].fixture:setSensor(true)
+                            end
+                        end, 1, 'Game')
+                    end
+                    return true
+                end
+            end)
+        end},
+        [7] = {main = function(image)
+            image.fixture:setSensor(true)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' and (e.other == Player or e.target == Player) then
+                    if Player.size == 'min' then
+                        Player.size = 'big'
+                        Scenes.game.save.playerSize = 'big'
+                        Player.xScale = 6
+                        Player.yScale = 6
+                        mane.timer.new(1, function()
+                            Player:removeBody()
+                            World:addBody(Player, 'dynamic', {
+                                shape = "rect",
+                                width = Player.image:getWidth() * 6,
+                                height = Player.image:getHeight() * 6
+                            })
+                            Player:setFixedRotation(true)
+
+                            for i = 1, #Scenes.game.save.isBig, 1 do
+                                Scenes.game.save.isBig[i].fixture:setSensor(true)
+                            end
+                            for i = 1, #Scenes.game.save.isMin, 1 do
+                                Scenes.game.save.isMin[i].fixture:setSensor(false)
+                            end
+                        end, 1, 'Game')
+                    end
+                    return true
+                end
+            end)
+        end},
+        [8] = {main = function(image)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' and (e.other == Player or e.target == Player) then
+                    Win()
+                    return true
+                end
+            end)
+        end},
+        [9] = {main = function(image)
+            table.insert(Scenes.game.save.isBig, image)
+            image.fixture:setSensor(true)
+        end},
+        [10] = {main = function(image)
+            table.insert(Scenes.game.save.isMin, image)
+        end},
+        [11] = {main = function (image, xScale, yScale, elem)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' and (e.other == Player or e.target == Player) then
+                    if Scenes.game.save.tpMap[elem.id] then
+                        Player.x, Player.y = Scenes.game.save.tpMap[elem.id].x, Scenes.game.save.tpMap[elem.id].y - 80
+                    end
+                    return true
+                end
+            end)
+        end},
+        [12] = {main = function (image, xScale, yScale, elem)
+            Scenes.game.save.tpMap[elem.id] = image
+        end},
+        [13] = {main = function(image)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' then
+                    local bullet = (e.other.name == 'bullet' and e.other) or (e.target.name == 'bullet' and e.target) or false
+                    if bullet then
+                        if bullet.timer then
+                            bullet.timer:cancel()
+                        end
+                        bullet:remove()
+                        if image then
+                            image:remove()
+                        end
+                        bullet = nil
+                        image = nil
+                        return true
+                    end
+                end
+            end)
+        end},
+        [14] = {main = function(image)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' and (e.other == Player or e.target == Player) then
+                    if Scenes.game.save.checkpoint then
+                        if Scenes.game.save.checkpoint[1] ~= image.x or Scenes.game.save.checkpoint[2] ~= image.y then
+                            Scenes.game.save.checkpoint = {image.x, image.y}
+                            local text = Map:newPrint('Сохранено!', 'res/Venus.ttf', image.x, image.y - (10 * image.yScale)/2, 30)
+                            mane.timer.new(2000, function()
+                                text:remove()
+                            end, 1, 'Game')
+                        end
+                    else
+                        Scenes.game.save.checkpoint = {image.x, image.y}
+                        local text = Map:newPrint('Сохранено!', 'res/Venus.ttf', image.x, image.y - (10 * image.yScale)/2, 30)
+                        mane.timer.new(2000, function()
+                            text:remove()
+                        end, 1, 'Game')
+                    end
+                    return true
+                end
+            end)
+        end},
+        [16] = {main = function (image)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' and (e.other == Player or e.target == Player) then
+                    mane.timer.new(1000, function ()
+                        if image then
+                            image:remove()
+                            image = nil
+                        end
+                    end, 1, 'Game')
+                    return true
+                end
+            end)
+        end},
+        [17] = {main = function (image, xScale, yScale, elem)
+            image.isVisible = false
+            Level:newPrint(elem.text, image.x, image.y, 'Venus.ttf')
+        end},
+        [26] = {main = function(image)
+            CountEnemy = CountEnemy + 1
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' then
+                    local bullet = (e.other.name == 'bullet' and e.other) or (e.target.name == 'bullet' and e.target) or false
+                    if bullet and bullet.typeComand ~= 'enemy' then
+                        if bullet.timer then
+                            bullet.timer:cancel()
+                        end
+                        bullet:remove()
+                        bullet = nil
+
+                        if image then
+                            image:remove()
+                            CountEnemy = CountEnemy - 1
+                        end
+                        image = nil
+
+                        if CountEnemy <= 0 then
+                            Win()
+                            return true
+                        end
+                        return true
+                    end
+                end
+            end)
+        end},
+        [27] = {main = function(image, xScale, yScale, elem)
+            CountEnemy = CountEnemy + 1
+            image.name = 'enemy'
+            image:setFixedRotation(true)
+            image.fixture:setCategory(4)
+            image.fixture:setMask(5)
+            
+            local hpText, damageGroup = enemy.addHpEnemy(image)
+
+            enemy.addWeponEnemy(image, elem)
+
+            enemy.addRipEnemy(image, hpText, damageGroup)
+
+            local shootDelay = weapons[elem.weapon].shootDelay
+            image.moveTimer = mane.timer.new(shootDelay * 1000, function()
+                if not image or not image.x then
+                    if image.moveTimer then
+                        image.moveTimer:cancel()
+                        image.moveTimer = nil
+                    end
+                    return
+                end
+                local distance = love.distance(image.x, image.y, Player.x, Player.y)
+
+                if distance <= weapons[elem.weapon].attackDistance then
+                    enemy.newAttack(false, image, elem)
+                elseif distance <= weapons[elem.weapon].distance then
+                    enemy.newAttack(true, image, elem)
+                end
+                image.moveTimer:setTime(shootDelay * (1000 - (image.maxHealth - image.health)/10))
+            end, 0, 'Game')
+        end},
+        [31] = {main = function (image)
+            image:addEvent('collision', function (e)
+                if e.phase == 'began' then
+                    if e.other == Player or e.target == Player then
+                        Money = Money + 1
+                        MoneyText.text = 'Монет: '..Money
+                        image:remove()
+                        image = nil
+                    end
+                end
+            end)
+        end},
+        [43] = {main = function (image, xScale, yScale, elem)
+            CountEnemy = CountEnemy + 1
+            image.name = 'enemy'
+            image.enemyType = 'ghost'
+
+            image:setGravityScale(0, 0)
+            image:setFixedRotation(true)
+            image.fixture:setCategory(4)
+            image.fixture:setMask(5)
+            
+            local hpText, damageGroup = enemy.addHpEnemy(image)
+
+            enemy.addWeponEnemy(image, elem)
+
+            enemy.addRipEnemy(image, hpText, damageGroup)
+
+            local count = 10
+
+            local shootDelay = weapons[elem.weapon].shootDelay
+            image.moveTimer = mane.timer.new(shootDelay * 1000, function()
+                if not image or not image.x then
+                    if image.moveTimer then
+                        image.moveTimer:cancel()
+                        image.moveTimer = nil
+                    end
+                    return
+                end
+                local distance = love.distance(image.x, image.y, Player.x, Player.y)
+
+                if distance <= weapons[elem.weapon].attackDistance then
+                    enemy.newAttack(false, image, elem)
+                elseif distance <= weapons[elem.weapon].distance then
+                    enemy.newAttack(true, image, elem)
+                end
+
+                image.moveTimer:setTime(shootDelay * (1000 - (image.maxHealth - image.health)/10))
+
+                count = count - 1
+                if count == 0 then
+                    if image.color[4] == 0 then
+                        image.color[4] = 1
+                        hpText.color[4] = 1
+                        image.weaponObject.color[4] = 1
+                    else
+                        image.color[4] = 0
+                        hpText.color[4] = 0
+                        image.weaponObject.color[4] = 0
+                    end
+                    count = 10
+                end
+            end, 0, 'Game')
+        end}
+    },
+    [3] = {removeBody = true},
+}
+
+local function load(map)
+    Level = Map:newGroup()
+    --Level.x, Level.y = mane.display.centerX, mane.display.centerY
+
+    for i = 1, #map, 1 do
+        local elem = mane.json.decode(mane.json.encode(map[i]))
+        elem.width = elem.width or (80)
+        elem.height = elem.height or (80)
+        elem.x, elem.y = elem.x + mane.display.centerX, elem.y + mane.display.centerY
+        local width, height = elem.width * 1.25, elem.height * 1.25
+        local xScale, yScale = getScaleSafe(nil, width or 0, height or 0, 10, 10)
+
+        if elem.inxScale then
+            xScale = -xScale
+        end
+        if elem.inyScale then
+            yScale = -yScale
+        end
+        local image = Level:newSprite(spriteSheet[elem.tileset or 1], elem.x, elem.y)
+        image.frame = elem.frame
+        image.xScale = xScale
+        image.yScale = yScale
+        image.angle = elem.angle or 0
+        image.color[4] = elem.alpha or 1
+        if elem.body then
+            World:addBody(image, elem.body or 'static', {
+                shape = 'rect',
+                width = 8 * xScale,
+                height = 8 * yScale,
+            })
+            if elem.isSensor then
+                image.fixture:setSensor(true)
+            end
+            image.fixture:setCategory(1)
+        end
+
+        local tilesetConfig = TILESET_CONFIG[elem.tileset or 1]
+        if tilesetConfig then
+            local frameConfig = tilesetConfig[elem.frame]
+            if frameConfig then
+                if frameConfig.removeBody then
+                    image:removeBody()
+                elseif frameConfig.heightScale then
+                    image:removeBody()
+                    World:addBody(image, elem.body or 'static', {
+                        shape = 'rect',
+                        width = 8 * xScale,
+                        height = frameConfig.heightScale * yScale,
+                        offsetX = frameConfig.offsetX and (frameConfig.offsetX * xScale),
+                        offsetY = frameConfig.offsetY and (frameConfig.offsetY * yScale)
+                    })
+                    image.fixture:setCategory(1)
+                end
+
+                if frameConfig.bodyRadius then
+                    image:removeBody()
+                    World:addBody(image, elem.body or 'static', {
+                        shape = 'circle',
+                        radius = frameConfig.bodyRadius * xScale,
+                    })
+                    image.fixture:setCategory(1)
+                end
+
+                if frameConfig.restitution then
+                    image:setRestitution(frameConfig.restitution)
+                end
+
+                if frameConfig.main then
+                    frameConfig.main(image, xScale, yScale, elem)
+                end
+            end
+        end
+    end
+end
+
+return load
