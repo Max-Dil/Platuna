@@ -163,6 +163,7 @@ end
 function m:newPrintf(text, font, x, y, limit, align, fontSize)
     if type(font) == "number" then
         x, y, limit, align = font, x, y, limit
+        font = nil
     else
         if not mane.fonts[font] then
             mane.fonts[font] = love.graphics.newFont(font, fontSize or 20)
@@ -174,12 +175,19 @@ function m:newPrintf(text, font, x, y, limit, align, fontSize)
         y = y,
         limit = limit or 200,
         align = align or "left",
-        font = type(font) == "string" and mane.fonts[font] or love.graphics.getFont(),
+        fontPath = type(font) == "string" and font or nil,
+        font = type(font) == "string" and mane.fonts[font] or love.graphics.newFont(fontSize or 20),
         fontSize = fontSize or 20,
-        setFontSize = function (fontSize)
-            mane.fonts[self.font] = love.graphics.setNewFont(mane.fonts[self.font], self.fontSize or 20)
+        setFontSize = function(self, fontSize)
+            if self.fontPath then
+                local newFont = love.graphics.newFont(self.fontPath, fontSize)
+                mane.fonts[self.fontPath .. "_" .. fontSize] = newFont
+                self.font = newFont
+            else
+
+                self.font = love.graphics.newFont(fontSize)
+            end
             self.fontSize = fontSize
-            self.font = mane.fonts[font]
         end,
         mode = "fill",
         _type = "newPrintf",
@@ -205,6 +213,7 @@ end
 function m:newPrint(text, font, x, y, fontSize)
     if type(font) == "number" then
         x, y, fontSize = font, x, y
+        font = nil
     else
         if not mane.fonts[font] then
             mane.fonts[font] = love.graphics.newFont(font, fontSize or 20)
@@ -214,12 +223,19 @@ function m:newPrint(text, font, x, y, fontSize)
         text = text,
         x = x,
         y = y,
-        font = type(font) == "string" and mane.fonts[font] or love.graphics.getFont(),
+        fontPath = type(font) == "string" and font or nil,
+        font = type(font) == "string" and mane.fonts[font] or love.graphics.newFont(fontSize or 20),
         fontSize = fontSize or 20,
-        setFontSize = function (fontSize)
-            mane.fonts[self.font] = love.graphics.setNewFont(mane.fonts[self.font], self.fontSize or 20)
+        setFontSize = function(self, fontSize)
+            if self.fontPath then
+                local newFont = love.graphics.newFont(self.fontPath, fontSize)
+                mane.fonts[self.fontPath .. "_" .. fontSize] = newFont
+                self.font = newFont
+            else
+
+                self.font = love.graphics.newFont(fontSize)
+            end
             self.fontSize = fontSize
-            self.font = mane.fonts[font]
         end,
         mode = "fill",
         _type = "newPrint",
@@ -569,7 +585,18 @@ function m:newGroup()
             end)
         end
         self.obj = {}
-    end 
+    end
+    function group:moveToGroup(newGroup)
+        local group = self.group
+        for i = #group.obj, 1, -1 do
+            if group.obj[i] == self then
+                table.remove(group.obj, i)
+                break
+            end
+        end
+        self.group = newGroup
+        table.insert(newGroup.obj, self)
+    end
     function group:toBack(self)
         local group = self.group
         for i = #group.obj, 1, -1 do
@@ -590,6 +617,17 @@ function m:newGroup()
             end
         end
         table.insert(group.obj, self)
+    end
+    function group:translate(x, y)
+        self.x, self.y = self.x + x, self.y + y
+    end
+    function group:rotate(angle)
+        self.angle = self.angle + angle
+        self.angle = self.angle % 360
+    end
+    function group:scale(x, y)
+        self.xScale = self.xScale+x
+        self.yScale = self.yScale+y
     end
     table.insert(self.obj, group)
     return group
@@ -653,4 +691,16 @@ function mane.display.game.remove(self)
             end
         end
     end
+end
+function mane.display.game.translate(self, x, y)
+    self.x, self.y = self.x + x, self.y + y
+end
+
+function mane.display.game.rotate(self, angle)
+    self.angle = self.angle + angle
+    self.angle = self.angle % 360
+end
+function mane.display.game.scale(self, x, y)
+    self.xScale = self.xScale+x
+    self.yScale = self.yScale+y
 end

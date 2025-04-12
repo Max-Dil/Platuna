@@ -3,7 +3,7 @@ local listeners = {}
 
 listeners.start = function ()
     m.remove()
-    Scenes.game.create()
+    Scenes.levels.create()
 end
 
 listeners.editor = function ()

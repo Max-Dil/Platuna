@@ -22,11 +22,14 @@ local function inputText(callback, title)
     text:scale(-0.3, -0.3)
     text:setColor(0, 0, 0, 1)
 
+    local lastKey = nil
+
     local function updateText()
         text.text = value
     end
 
     local function keyListener(e)
+        print(lastKey)
         if e.phase == "ended" then
             if e.key == "enter" or e.key == "return" then
                 inputGroup:remove()
@@ -37,10 +40,17 @@ local function inputText(callback, title)
             elseif e.key == "backspace" then
                 value = value:sub(1, -2)
                 updateText()
-            elseif #e.key == 1 then
+            elseif e.key == "v" and lastKey == "lctrl" then
+                local pastedText = love.system.getClipboardText()
+                if pastedText then
+                    value = value .. pastedText
+                    updateText()
+                end
+            elseif #e.key == 1 and e.key ~= "lctrl" then
                 value = value .. e.key
                 updateText()
             end
+            lastKey = e.key
         end
         return true
     end
@@ -92,7 +102,7 @@ local function inputNumber(callback, title)
 
     bg:addEvent('touch', function() return true end)
     inputBox:addEvent('key', keyListener)
-    
+
     m.back = 'lock'
 end
 
@@ -226,10 +236,59 @@ end
 
 listeners.save = function ()
     print(1)
+    print(mane.json.encode(m.MapData))
+    love.system.setClipboardText(mane.json.encode(m.MapData))
 end
 
 listeners.load = function ()
     print(1)
+    inputText(function (text)
+        local level = mane.json.decode(text)
+        m.MapBlocks = {}
+        m.MapData = level
+
+        m.Map:removeObjects()
+        m.Map:newImage('res/images/skins/skin1.png', 0, 0, 5, 5)
+
+        for key, value in pairs(level) do
+            for i = 1, #value, 1 do
+                local blockData = level[key][i]
+                local block = m.Map:newSprite(
+                    m.spriteSheet[blockData.tileset],
+                    blockData.x,
+                    blockData.y
+                )
+                block.frame = blockData.frame
+                block:scale(72.5/8, 72.5/8)
+                block.angle = blockData.angle
+                block.color[4] = blockData.alpha
+
+                -- local blockData2 = {
+                --     tileset = currentBlock.sheet,
+                --     frame = currentBlock.frame,
+                --     x = gridX,
+                --     y = gridY,
+                --     angle = m.rotation,
+                --     alpha = m.alpha,
+                --     body = m.isDynamic and 'dynamic' or 'static',
+                --     isSensor = m.isDecoration
+                -- }
+                m.MapBlocks["block_"..key .. #m.MapData[key]] = block
+                if #m.MapData[key] > 1 then
+                    local text
+                    if not m.MapBlocks["blockText_"..key] then
+                        text = m.Map:newPrint('block: ' .. tostring(#m.MapData[key]), 'res/Venus.ttf', block.x, block.y + 30, 15)
+                        text:scale(-0.2, -0.2)
+                        m.MapBlocks["blockText_"..key] = text
+                    else
+                        text = m.MapBlocks["blockText_"..key]
+                        text.text = 'block: ' .. tostring(#m.MapData[key])
+                        text:toFront()
+                    end
+                end
+            end
+        end
+    end, 'Введите код уровня')
 end
 
 listeners.launch = function ()

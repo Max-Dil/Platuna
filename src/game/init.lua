@@ -3,6 +3,7 @@ local PlayerFactory = require('src.game.player')
 local loadMap = require('src.game.loadMap')
 
 m.remove = function ()
+    mane.display.setBackgroundColor(0, 0, 0)
     Runtime:removeEvent('touch', Player.listener)
     mane.timer.cancelAll('Game')
     mane.timer.cancelAll()
@@ -82,6 +83,7 @@ m.selectWeapon = function (callback)
 end
 
 m.run = function ()
+    mane.display.setBackgroundColor(0, 0, 33/255)
     m.save = {
         isBig = {},
         isMin = {},
@@ -124,6 +126,9 @@ m.run = function ()
     local textLevel = Game:newPrint('Уровень: '..CountLevel, 'res/Venus.ttf', mane.display.centerX, 40, 30)
     if m.editor then
         textLevel.text = "Уровень: редактор"
+    else
+        local saves = require('saves')
+        textLevel.text = 'Уровень: '.. saves.load('level', 1)
     end
 
     local fpsText = Game:newPrint('FPS: 0', 'res/Venus.ttf', mane.display.width - 100, 40, 30)
@@ -168,7 +173,7 @@ m.run = function ()
         if m.editor then
             loadMap(m.editor)
         else
-            loadMap(require('res.levels.'..CountLevel))
+            loadMap(m.level)
         end
         if m.save.checkpoint then
             Player.x, Player.y = m.save.checkpoint[1], m.save.checkpoint[2]
@@ -190,29 +195,37 @@ m.run = function ()
             m.remove()
             Scenes.editor.group.isVisible = true
             return
-        end
-        CountLevel = CountLevel + 1
-        textLevel.text = 'Уровень: '..CountLevel
-
-        MaxMoney = Money
-        Reload()
-        if CountLevel == 10 then
-            local text = Game:newPrint('Хватит простого обучения! Начнем адскую игру.', 'res/Venus.ttf', mane.display.centerX, mane.display.centerY - 100, 30)
-            mane.timer.new(2500, function ()
-                text:remove()
-                text = nil
-            end, 1, 'Game')
+        else
+            local saves = require('saves')
+            if m.currentLevel >= saves.load('level', 1) then
+                saves.save('level', saves.load('level', 1) + 1)
+            end
+            m.remove()
+            Scenes.levels.create()
+            return
         end
     end
 end
 
-m.create = function ()
+m.create = function (level)
     m.back = "main"
-    mane.display.setBackgroundColor(0, 0, 33/255)
 
+    local level2 = mane.json.decode(require('res.levels.'..level))
+
+    local levelData = {}
+
+    for key, value in pairs(level2) do
+        for i2 = 1, #value, 1 do
+            table.insert(levelData, value[i2])
+        end
+    end
+
+    m.level = levelData
+    m.currentLevel = level
     m.run()
 
-    loadMap(require('res.levels.'..CountLevel))
+    loadMap(m.level)
+    --loadMap(require('res.levels.'..CountLevel))
 
     Player = PlayerFactory()
     mane.timer.pauseAll('Game')
