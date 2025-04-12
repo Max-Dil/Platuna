@@ -42,10 +42,10 @@ end
 local weapons = {
     Piston = {
         image = 'res/images/weapons/Piston.png',
-        shootDelay = 0.34,
-        bulletLifetime = 70,
+        shootDelay = 0.33,
+        bulletLifetime = 61,
         force = 250,
-        bulletSpeed = 650,
+        bulletSpeed = 690,
         attackDistance = 820,
         distance = 5000,
         damage = 10
@@ -63,9 +63,9 @@ local weapons = {
     MP40 = {
         image = 'res/images/weapons/MP40.png',
         shootDelay = 0.1,
-        bulletLifetime = 60,
-        force = 70,
-        bulletSpeed = 400,
+        bulletLifetime = 48,
+        force = 75,
+        bulletSpeed = 500,
         attackDistance = 400,
         distance = 5000,
         damage = 4
@@ -78,7 +78,7 @@ local weapons = {
         bulletSpeed = 1800,
         attackDistance = 5000,
         distance = 10000,
-        damage = 50
+        damage = 40
     },
     Shotgun = {
         image = 'res/images/weapons/Shotgun.png',
@@ -260,7 +260,7 @@ do
             image.targetY = targetY
         end
 
-        targetX, targetY = targetX + math.random(-10, 10), targetY + math.random(-10, 10)
+        targetX, targetY = targetX + math.random(-40, 40), targetY + math.random(-40, 40)
         if elem.weapon == 'Shotgun' then
             local spread = 0.08
             local baseAngle = math.atan2(targetY - image.y, targetX - image.x)

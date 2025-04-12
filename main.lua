@@ -10,6 +10,11 @@ function mane.load()
     Runtime = mane.display.game:newRect(mane.display.centerX, mane.display.centerY, mane.display.width, mane.display.height)
     Runtime.isVisible = false
 
+    local saves = require('saves')
+    if saves.load('level', false) == false then
+        saves.save('level', 1)
+    end
+
     Scenes = {
         menu = require('src.menu'),
         editor = require('src.editor'),

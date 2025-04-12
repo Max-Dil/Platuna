@@ -14,10 +14,10 @@ local function PlayerFactory()
     Player.weapons = {
         Piston = {
             image = 'res/images/weapons/Piston.png',
-            shootDelay = 0.34,
-            bulletLifetime = 70,
+            shootDelay = 0.33,
+            bulletLifetime = 61,
             force = 250,
-            bulletSpeed = 600,
+            bulletSpeed = 690,
             damage = 10
         },
         AK47 = {
@@ -31,9 +31,9 @@ local function PlayerFactory()
         MP40 = {
             image = 'res/images/weapons/MP40.png',
             shootDelay = 0.1,
-            bulletLifetime = 60,
-            force = 70,
-            bulletSpeed = 400,
+            bulletLifetime = 48,
+            force = 75,
+            bulletSpeed = 500,
             damage = 4
         },
         Snipe = {
@@ -42,7 +42,7 @@ local function PlayerFactory()
             bulletLifetime = 200,
             force = 650,
             bulletSpeed = 1800,
-            damage = 50
+            damage = 40
         },
         Shotgun = {
             image = 'res/images/weapons/Shotgun.png',
