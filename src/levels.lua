@@ -37,7 +37,7 @@ m.create = function ()
 
             l = l + 1
             level.level = l
-            local levelText = group:newPrint(l, level.x, level.y)
+            local levelText = group:newPrint(l, 'res/Venus.ttf', level.x, level.y, 30)
 
             if currentLevel < l then
                 level.color[4] = 0.5

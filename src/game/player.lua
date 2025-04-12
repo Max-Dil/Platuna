@@ -104,7 +104,7 @@ local function PlayerFactory()
         'res/Venus.ttf',
         Player.x,
         Player.y - 50,
-        15
+        20
     )
     Player.hpText = hpText
     hpText:toFront()
@@ -156,7 +156,7 @@ local function PlayerFactory()
             'res/Venus.ttf',
             Player.x + math.random(-30, 30),
             Player.y - 70 + math.random(-0, -30),
-            15
+            20
         )
         if bullet.damage < 0 then
             damageText:setColor(0, 1, 0)

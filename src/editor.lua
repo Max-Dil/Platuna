@@ -605,7 +605,6 @@ m.create = function ()
 
     local lastik = group:newImage('res/images/buttons/red.png', 90, mane.display.height - 25, 2, 2)
     local lastikText = group:newPrint('Ластик', 'res/Venus.ttf', lastik.x, lastik.y, 20)
-    lastikText:scale(-0.3, -0.3)
     lastik.button = 'lastik'
     lastik:addEvent('touch', click)
 
@@ -618,26 +617,22 @@ m.create = function ()
 
     local transparency = group:newImage('res/images/buttons/purple.png', 250, mane.display.height - 25, 2, 2)
     local transText = group:newPrint('Прозрачность', 'res/Venus.ttf', transparency.x, transparency.y, 20)
-    transText:scale(-0.3, -0.3)
     transparency.button = 'transparency'
     transparency:addEvent('touch', click)
 
     local rotation = group:newImage('res/images/buttons/orange.png', 410, mane.display.height - 25, 2, 2)
     local rotText = group:newPrint('Вращение', 'res/Venus.ttf', rotation.x, rotation.y, 20)
-    rotText:scale(-0.3, -0.3)
     rotation.button = 'rotation'
     rotation:addEvent('touch', click)
 
     local dynamic = group:newImage('res/images/buttons/red.png', 570, mane.display.height - 25, 2, 2)
     local dynamicText = group:newPrint('Статический', 'res/Venus.ttf', dynamic.x, dynamic.y, 20)
-    dynamicText:scale(-0.3, -0.3)
     dynamic.button = 'dynamic'
     dynamic.text = dynamicText
     dynamic:addEvent('touch', click)
 
     local decoration = group:newImage('res/images/buttons/red.png', 730, mane.display.height - 25, 2, 2)
     local decorText = group:newPrint('Блок', 'res/Venus.ttf', decoration.x, decoration.y, 20)
-    decorText:scale(-0.3, -0.3)
     decoration.button = 'decoration'
     decoration.text = decorText
     decoration:addEvent('touch', click)

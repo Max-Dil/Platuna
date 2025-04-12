@@ -103,7 +103,7 @@ do
             'res/Venus.ttf',
             image.x,
             image.y - 50,
-            15
+            20
         )
         hpText:toFront()
         hpText:setColor(0,1,0)
@@ -120,7 +120,7 @@ do
                     'res/Venus.ttf',
                     image.x+ math.random(-30, 30),
                     image.y - 50+ math.random(-0, -30),
-                    15
+                    20
                 )
                 damageText:setColor(1, 0, 0)
                 mane.timer.new(500, function()
@@ -536,7 +536,7 @@ local TILESET_CONFIG = {
         end},
         [17] = {main = function (image, xScale, yScale, elem)
             image.isVisible = false
-            Level:newPrint(elem.text, image.x, image.y, 'Venus.ttf')
+            Level:newPrint(elem.text, 'Venus.ttf', image.x, image.y, 25)
         end},
         [20] = {main = function(image, xScale, yScale, elem)
             local distance = elem.distance or 1000

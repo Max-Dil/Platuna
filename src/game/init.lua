@@ -71,7 +71,7 @@ m.selectWeapon = function (callback)
 
         local image = selectGroup:newImage(value, rect.x - 150, rect.y, 1.25, 1.25)
 
-        local text = selectGroup:newPrint(key, image.x + 100, image.y)
+        local text = selectGroup:newPrint(key, 'res/Venus.ttf', image.x + 100, image.y)
 
         rect:addEvent('touch', function ()
             selectGroup:remove()

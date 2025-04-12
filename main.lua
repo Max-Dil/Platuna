@@ -19,7 +19,8 @@ function mane.load()
         menu = require('src.menu'),
         levels = require('src.levels'),
         editor = require('src.editor'),
-        game = require('src.game')
+        game = require('src.game'),
+        options = require('src.options')
     }
 
     Scenes.menu.create()
