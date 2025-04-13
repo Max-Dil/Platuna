@@ -13,12 +13,28 @@ spriteSheet[1] = mane.graphics.newSpriteSheet('res/images/blocks.png', 10, 10, 5
 spriteSheet[2] = mane.graphics.newSpriteSheet('res/images/blocks2.png', 10, 10, 43, 12)
 spriteSheet[3] = mane.graphics.newSpriteSheet('res/images/blocks3.png', 10, 10, 36, 20)
 
+-- local function predictPlayerPosition(image, bulletSpeed)
+--     local distance = love.distance(image.x, image.y, Player.x, Player.y)
+--     local timeToHit = distance / bulletSpeed
+--     local playerVx, playerVy = Player:getLinearVelocity()
+--     local predictedX = Player.x + playerVx * timeToHit
+--     local predictedY = Player.y + playerVy * timeToHit
+--     return predictedX, predictedY
+-- end
+
 local function predictPlayerPosition(image, bulletSpeed)
+    local gx, gy = World.world:getGravity()
+
     local distance = love.distance(image.x, image.y, Player.x, Player.y)
+
     local timeToHit = distance / bulletSpeed
+
     local playerVx, playerVy = Player:getLinearVelocity()
-    local predictedX = Player.x + playerVx * timeToHit
-    local predictedY = Player.y + playerVy * timeToHit
+
+    -- s = s0 + v0*t + (1/2)*a*t^2
+    local predictedX = Player.x + playerVx * timeToHit + 0.3 * gx * timeToHit^2
+    local predictedY = Player.y + playerVy * timeToHit + 0.3 * gy * timeToHit^2
+    
     return predictedX, predictedY
 end
 
@@ -43,9 +59,9 @@ local weapons = {
     Piston = {
         image = 'res/images/weapons/Piston.png',
         shootDelay = 0.33,
-        bulletLifetime = 61,
+        bulletLifetime = 54.9,
         force = 250,
-        bulletSpeed = 690,
+        bulletSpeed = 759,
         attackDistance = 820,
         distance = 5000,
         damage = 10
@@ -53,9 +69,9 @@ local weapons = {
     AK47 = {
         image = 'res/images/weapons/AK47.png',
         shootDelay = 0.22,
-        bulletLifetime = 70,
+        bulletLifetime = 63,
         force = 180,
-        bulletSpeed = 600,
+        bulletSpeed = 660,
         attackDistance = 700,
         distance = 5000,
         damage = 8
@@ -63,9 +79,9 @@ local weapons = {
     MP40 = {
         image = 'res/images/weapons/MP40.png',
         shootDelay = 0.1,
-        bulletLifetime = 48,
+        bulletLifetime = 43.2,
         force = 75,
-        bulletSpeed = 500,
+        bulletSpeed = 550,
         attackDistance = 400,
         distance = 5000,
         damage = 4
@@ -73,9 +89,9 @@ local weapons = {
     Snipe = {
         image = 'res/images/weapons/Snipe.png',
         shootDelay = 1,
-        bulletLifetime = 200,
+        bulletLifetime = 180,
         force = 650,
-        bulletSpeed = 1800,
+        bulletSpeed = 1980,
         attackDistance = 5000,
         distance = 10000,
         damage = 40
@@ -83,9 +99,9 @@ local weapons = {
     Shotgun = {
         image = 'res/images/weapons/Shotgun.png',
         shootDelay = 0.85,
-        bulletLifetime = 25,
+        bulletLifetime = 22.5,
         force = 100,
-        bulletSpeed = 800,
+        bulletSpeed = 880,
         attackDistance = 336,
         distance = 5000,
         damage = 8
@@ -142,7 +158,7 @@ do
         World:addBody(bullet, 'dynamic')
         bullet.fixture:setCategory(5)
         bullet.fixture:setMask(4, 5)
-        bullet:setGravityScale(0, 0)
+        bullet:setGravityScale(0.3, 0.3)
         bullet:setFriction(1000)
         bullet:setRestitution(0)
     

@@ -15,41 +15,41 @@ local function PlayerFactory()
         Piston = {
             image = 'res/images/weapons/Piston.png',
             shootDelay = 0.33,
-            bulletLifetime = 61,
+            bulletLifetime = 54.9,
             force = 250,
-            bulletSpeed = 690,
+            bulletSpeed = 759,
             damage = 10
         },
         AK47 = {
             image = 'res/images/weapons/AK47.png',
             shootDelay = 0.22,
-            bulletLifetime = 70,
+            bulletLifetime = 63,
             force = 180,
-            bulletSpeed = 550,
+            bulletSpeed = 605,
             damage = 8
         },
         MP40 = {
             image = 'res/images/weapons/MP40.png',
             shootDelay = 0.1,
-            bulletLifetime = 48,
+            bulletLifetime = 43.2,
             force = 75,
-            bulletSpeed = 500,
+            bulletSpeed = 550,
             damage = 4
         },
         Snipe = {
             image = 'res/images/weapons/Snipe.png',
             shootDelay = 1,
-            bulletLifetime = 200,
+            bulletLifetime = 180,
             force = 650,
-            bulletSpeed = 1800,
+            bulletSpeed = 1980,
             damage = 40
         },
         Shotgun = {
             image = 'res/images/weapons/Shotgun.png',
             shootDelay = 0.85,
-            bulletLifetime = 25,
+            bulletLifetime = 22.5,
             force = 100,
-            bulletSpeed = 800,
+            bulletSpeed = 880,
             damage = 8
         }
     }
@@ -177,7 +177,7 @@ local function PlayerFactory()
         World:addBody(bullet, 'dynamic')
         bullet.fixture:setCategory(3)
         bullet.fixture:setMask(2, 3)
-        bullet:setGravityScale(0, 0)
+        bullet:setGravityScale(0.3, 0.3)
         bullet:setFriction(0.1)
         bullet:setRestitution(0)
 
