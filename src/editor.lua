@@ -15,11 +15,8 @@ local function inputText(callback, title)
     inputBox.color = {1, 1, 1, 1}
 
     local titleText = inputGroup:newPrint(title or "Enter text", 'res/Venus.ttf', mane.display.centerX, mane.display.centerY - 40, 20)
-    titleText:scale(-0.3, -0.3)
-
     local value = ""
     local text = inputGroup:newPrint(value, 'res/Venus.ttf', mane.display.centerX, mane.display.centerY, 25)
-    text:scale(-0.3, -0.3)
     text:setColor(0, 0, 0, 1)
 
     local lastKey = nil
@@ -70,11 +67,9 @@ local function inputNumber(callback, title)
     inputBox.color = {1, 1, 1, 1}
 
     local titleText = inputGroup:newPrint(title or "Enter value", 'res/Venus.ttf', mane.display.centerX, mane.display.centerY - 40, 20)
-    titleText:scale(-0.3, -0.3)
 
     local value = ""
     local text = inputGroup:newPrint(value, 'res/Venus.ttf', mane.display.centerX, mane.display.centerY, 25)
-    text:scale(-0.3, -0.3)
     text:setColor(0,0,0,1)
 
     local function updateText()
@@ -124,7 +119,6 @@ local function selectWeapon(callback)
         local button = weaponGroup:newRect(weapon.x, weapon.y, 100, 40)
         button.color = {1, 1, 1, 1}
         local text = weaponGroup:newPrint(weapon.name, 'res/Venus.ttf', weapon.x, weapon.y, 20)
-        text:scale(-0.3, -0.3)
         text:setColor(0, 0, 0, 1)
 
         button:addEvent('touch', function(e)
@@ -278,7 +272,6 @@ listeners.load = function ()
                     local text
                     if not m.MapBlocks["blockText_"..key] then
                         text = m.Map:newPrint('block: ' .. tostring(#m.MapData[key]), 'res/Venus.ttf', block.x, block.y + 30, 15)
-                        text:scale(-0.2, -0.2)
                         m.MapBlocks["blockText_"..key] = text
                     else
                         text = m.MapBlocks["blockText_"..key]
@@ -429,7 +422,6 @@ local function placeBlock(x, y)
             local text
             if not m.MapBlocks["blockText_"..key] then
                 text = m.Map:newPrint('block: ' .. tostring(#m.MapData[key]), 'res/Venus.ttf', block.x, block.y + 30, 15)
-                text:scale(-0.2, -0.2)
                 m.MapBlocks["blockText_"..key] = text
             else 
                 text = m.MapBlocks["blockText_"..key]
@@ -539,20 +531,17 @@ m.create = function ()
     end)
 
     local launch = group:newImage('res/images/buttons/green.png', mane.display.centerX + mane.display.width/2 - 100, 40, 2, 2)
-    local launchText = group:newPrint('Запустить', 'res/Venus.ttf', launch.x, launch.y, 25)
-    launchText:scale(-0.3, -0.3)
+    local launchText = group:newPrint('Запустить', 'res/Venus.ttf', launch.x, launch.y)
     launch.button = 'launch'
     launch:addEvent('touch', click)
 
     local save = group:newImage('res/images/buttons/yellow.png', mane.display.centerX + mane.display.width/2 - 270, 40, 2, 2)
-    local saveText = group:newPrint('Сохранить', 'res/Venus.ttf', save.x, save.y, 25)
-    saveText:scale(-0.3, -0.3)
+    local saveText = group:newPrint('Сохранить', 'res/Venus.ttf', save.x, save.y)
     save.button = 'save'
     save:addEvent('touch', click)
 
     local load = group:newImage('res/images/buttons/blue.png', mane.display.centerX + mane.display.width/2 - 270 - 170, 40, 2, 2)
-    local loadText = group:newPrint('Загрузить', 'res/Venus.ttf', load.x, load.y, 25)
-    loadText:scale(-0.3, -0.3)
+    local loadText = group:newPrint('Загрузить', 'res/Venus.ttf', load.x, load.y)
     load.button = 'load'
     load:addEvent('touch', click)
 

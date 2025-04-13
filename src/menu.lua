@@ -58,6 +58,34 @@ m.create = function ()
     local exitText = group:newPrint('Выйти', 'res/Venus.ttf', exit.x, exit.y, 25)
     exit.button = 'exit'
     exit:addEvent('touch', click)
+
+    local saves = require('saves')
+    local optionsData = saves.load('options', {
+        volume = 0.5,
+        music = true,
+        fps = 120,
+        vsync = true
+    })
+    if optionsData.fps == "infinity" then
+        mane.fps = 999999
+        if mane.fps == 999999 then
+            return
+        end
+    else
+        if mane.fps == optionsData.fps then
+            return
+        end
+    end
+    if optionsData.vsync then
+        love.window.setMode(mane.display.width, mane.display.height, {vsync = 1})
+    else
+        love.window.setMode(mane.display.width, mane.display.height, {vsync = 0})
+    end
+    if optionsData.fps == "infinity" then
+        mane.fps = 999999
+    else
+        mane.fps = optionsData.fps
+    end
 end
 
 m.remove = function ()

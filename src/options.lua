@@ -22,29 +22,9 @@ m.create = function()
     local optionsData = saves.load('options', {
         volume = 0.5,
         music = true,
-        fps = 60
+        fps = 120,
+        vsync = true
     })
-
-    -- -- Volume slider
-    -- local volumeLabel = group:newPrint("Volume", 100, 100, 'res/Venus.ttf')
-    -- local volumeSlider = group:newRect(150, 100, 200, 10)
-    -- volumeSlider.color = {0.5, 0.5, 0.5, 1}
-    
-    -- local volumeKnob = group:newCircle(150 + optionsData.volume * 200, 100, 15)
-    -- volumeKnob.color = {1, 1, 1, 1}
-    -- volumeKnob.button = "volume"
-    
-    -- listeners.volume = function(target)
-    --     local function drag(e)
-    --         if e.phase == "moved" then
-    --             local x = math.max(150, math.min(350, e.x))
-    --             target.x = x
-    --             optionsData.volume = (x - 150) / 200
-    --             saves.save('options', optionsData)
-    --         end
-    --     end
-    --     volumeKnob:addEvent('touch', drag)
-    -- end
 
     -- Music toggle
     local musicLabel = group:newPrint("Music: " .. (optionsData.music and "On" or "Off"), 'res/Venus.ttf', 100, 150, 20)
@@ -59,13 +39,27 @@ m.create = function()
         saves.save('options', optionsData)
     end
 
+    -- VSync toggle
+    local vsyncLabel = group:newPrint("VSync: " .. (optionsData.vsync and "On" or "Off"), 'res/Venus.ttf', 100, 250, 20)
+    local vsyncToggle = group:newRect(300, 250, 80, 40)
+    vsyncToggle.color = optionsData.vsync and {0, 1, 0, 1} or {1, 0, 0, 1}
+    vsyncToggle.button = "vsync"
+
+    listeners.vsync = function(target)
+        optionsData.vsync = not optionsData.vsync
+        vsyncLabel.text = "VSync: " .. (optionsData.vsync and "On" or "Off")
+        target.color = optionsData.vsync and {0, 1, 0, 1} or {1, 0, 0, 1}
+        love.window.setMode(mane.display.width, mane.display.height, {vsync = optionsData.vsync and 1 or 0})
+        saves.save('options', optionsData)
+    end
+
     -- FPS selector
-    local fpsOptions = {30, 60, 120, 240, "infinity"}
+    local fpsOptions = {30, 60, 120, 240, 480, 960, "infinity"}
     local fpsLabel = group:newPrint("FPS: " .. optionsData.fps, 'res/Venus.ttf', 100, 200, 20)
     local fpsButtons = {}
 
     for i, fps in ipairs(fpsOptions) do
-        local button = group:newRect(150 + (i-1) * 60, 200, 50, 40)
+        local button = group:newRect(200 + (i-1) * 60, 200, 50, 40)
         button.color = optionsData.fps == fps and {0, 1, 0, 1} or {0.5, 0.5, 0.5, 1}
         button.button = "fps" .. fps
         button.fpsValue = fps
@@ -91,7 +85,7 @@ m.create = function()
         end
     end
 
-    local exit = group:newCircle(40, 40, 20)
+    local exit = group:newCircle(40, 40, 0)
     exit.color = {1, 0, 0, 1}
     exit.button = "exit"
 

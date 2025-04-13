@@ -103,7 +103,7 @@ do
             'res/Venus.ttf',
             image.x,
             image.y - 50,
-            20
+            30
         )
         hpText:toFront()
         hpText:setColor(0,1,0)
@@ -120,7 +120,7 @@ do
                     'res/Venus.ttf',
                     image.x+ math.random(-30, 30),
                     image.y - 50+ math.random(-0, -30),
-                    20
+                    30
                 )
                 damageText:setColor(1, 0, 0)
                 mane.timer.new(500, function()
@@ -140,11 +140,12 @@ do
         bullet:setColor(0.8, 0.3, 0.3)
         bullet.damage = weapons[elem.weapon].damage
         World:addBody(bullet, 'dynamic')
-        --bullet.fixture:setSensor(true)
         bullet.fixture:setCategory(5)
         bullet.fixture:setMask(4, 5)
         bullet:setGravityScale(0, 0)
-
+        bullet:setFriction(1000)
+        bullet:setRestitution(0)
+    
         local angle = math.atan2(y - image.y, x - image.x)
         local angleDegrees = (angle / math.pi) * 180
         if move then
@@ -159,22 +160,27 @@ do
             end
         end
         angle = (angleDegrees / 180) * math.pi
-
+    
         local bulletSpeed = weapons[elem.weapon].bulletSpeed
         local bulletVelocityX = math.cos(angle) * bulletSpeed
         local bulletVelocityY = math.sin(angle) * bulletSpeed
-
         bullet.angle = (angle / math.pi) * 180
-
+        bullet.initialSpeed = bulletSpeed
+    
         local lifetimeSeconds = weapons[elem.weapon].bulletLifetime / 60
         local elapsedTime = 0
+    
+        bullet:setLinearVelocity(bulletVelocityX, bulletVelocityY)
 
         local bulletTimer
         bulletTimer = mane.timer.new(0, function(dt)
             elapsedTime = elapsedTime + dt
-            bullet.x = bullet.x + bulletVelocityX * dt
-            bullet.y = bullet.y + bulletVelocityY * dt
-            if elapsedTime >= lifetimeSeconds then
+
+            local vx, vy = bullet:getLinearVelocity()
+            local currentSpeed = math.sqrt(vx^2 + vy^2)
+            local alpha = math.max(0.6, currentSpeed / bullet.initialSpeed)
+            bullet.color[4] = alpha
+            if currentSpeed < bulletSpeed/100 or (elapsedTime >= lifetimeSeconds) then
                 bullet:remove()
                 bulletTimer:cancel()
                 bulletTimer = nil
@@ -183,14 +189,18 @@ do
         end, 0, 'Game')
 
         bullet.timer = bulletTimer
-
         bullet:addEvent('collision', function(e)
             if e.phase ~= 'began' then
                 return false
             end
             if e.target == Player or e.other == Player then
-                Player.health = Player.health - bullet.damage
-                Player.showDamage(bullet)
+                local vx, vy = bullet:getLinearVelocity()
+                local currentSpeed = math.sqrt(vx^2 + vy^2)
+                local damageRatio = currentSpeed > 0 and math.min(1, currentSpeed / bullet.initialSpeed) or 0
+                local scaledDamage = math.floor(bullet.damage * damageRatio)
+
+                Player.health = Player.health - scaledDamage
+                Player.showDamage({damage = scaledDamage})
                 if Player.health <= 0 then
                     Reload()
                 end
@@ -199,27 +209,13 @@ do
                     bullet.timer:cancel()
                 end
                 return true
-            else
-                if e.target ~= image and e.other ~= image and not (e.other.name == 'bullet' and e.target.name == 'bullet') then
-                    mane.timer.new(10, function()
-                        if bullet then
-                            bullet:remove()
-                        end
-                        if bulletTimer then
-                            bulletTimer:cancel()
-                            bulletTimer = nil
-                        end
-                    end, 1, 'Game')
-                end
             end
         end)
-
+    
         image.body:setPosition(image.x - 1, image.y)
-
         local force = weapons[elem.weapon].force
         local vx, vy = image:getLinearVelocity()
         image:setLinearVelocity(vx - (math.cos(angle) * force), vy - (math.sin(angle) * force))
-
         image.body:setPosition(image.x + 1, image.y)
     end
 

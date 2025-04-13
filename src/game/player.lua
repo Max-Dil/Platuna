@@ -104,7 +104,7 @@ local function PlayerFactory()
         'res/Venus.ttf',
         Player.x,
         Player.y - 50,
-        20
+        30
     )
     Player.hpText = hpText
     hpText:toFront()
@@ -156,7 +156,7 @@ local function PlayerFactory()
             'res/Venus.ttf',
             Player.x + math.random(-30, 30),
             Player.y - 70 + math.random(-0, -30),
-            20
+            30
         )
         if bullet.damage < 0 then
             damageText:setColor(0, 1, 0)
@@ -175,33 +175,40 @@ local function PlayerFactory()
         bullet:setColor(0.8, 0.8, 0.3)
         bullet.damage = Player.weapons[Player.weapon].damage
         World:addBody(bullet, 'dynamic')
-        --bullet.fixture:setSensor(true)
         bullet.fixture:setCategory(3)
         bullet.fixture:setMask(2, 3)
         bullet:setGravityScale(0, 0)
+        bullet:setFriction(0.1)
+        bullet:setRestitution(0)
 
         local angle = math.atan2(y - Player.y, x - Player.x)
         local bulletSpeed = Player.weapons[Player.weapon].bulletSpeed or 600
         local bulletVelocityX = math.cos(angle) * bulletSpeed
         local bulletVelocityY = math.sin(angle) * bulletSpeed
         bullet.angle = (angle / math.pi) * 180
+        bullet.initialSpeed = bulletSpeed
 
         local lifetimeSeconds = Player.weapons[Player.weapon].bulletLifetime * 0.0167
         local elapsedTime = 0
 
+        bullet:setLinearVelocity(bulletVelocityX, bulletVelocityY)
+
         local bulletTimer
         bulletTimer = mane.timer.new(0, function(dt)
             elapsedTime = elapsedTime + dt
-            bullet.x = bullet.x + bulletVelocityX * dt
-            bullet.y = bullet.y + bulletVelocityY * dt
-            if elapsedTime >= lifetimeSeconds then
+
+            local vx, vy = bullet:getLinearVelocity()
+            local currentSpeed = math.sqrt(vx^2 + vy^2)
+            local alpha = math.max(0.6, currentSpeed / bullet.initialSpeed)
+            bullet.color[4] = alpha
+            if currentSpeed < bulletSpeed/100 or (elapsedTime >= lifetimeSeconds) then
                 bullet:remove()
                 bulletTimer:cancel()
                 bulletTimer = nil
                 bullet = nil
             end
         end, 0, 'Game')
-    
+
         bullet.timer = bulletTimer
         bullet:addEvent('collision', function(e)
             if e.phase ~= 'began' then
@@ -210,11 +217,16 @@ local function PlayerFactory()
             if e.target ~= Player and e.other ~= Player then
                 local target = e.target.name == 'enemy' and e.target or e.other.name == 'enemy' and e.other
                 if target then
-                    target.health = target.health - bullet.damage
+                    local vx, vy = bullet:getLinearVelocity()
+                    local currentSpeed = math.sqrt(vx^2 + vy^2)
+                    local damageRatio = currentSpeed > 0 and math.min(1, currentSpeed / bullet.initialSpeed) or 0
+                    local scaledDamage = math.floor(bullet.damage * damageRatio)
+
+                    target.health = target.health - scaledDamage
                     target.mad = true
-                    target.showDamage(bullet)
-                    Player.health = Player.health + math.ceil(bullet.damage / 2)
-                    Player.showDamage({damage = -math.ceil(bullet.damage / 2)})
+                    target.showDamage({damage = scaledDamage})
+                    Player.health = Player.health + math.ceil(scaledDamage / 2)
+                    Player.showDamage({damage = -math.ceil(scaledDamage / 2)})
                     if Player.health >= Player.maxHealth then
                         Player.health = Player.maxHealth
                     end
@@ -232,16 +244,6 @@ local function PlayerFactory()
                         if bullet2 then bullet2:remove() end
                         if bullet2.timer then bullet2.timer:cancel() end
                     end
-                else
-                    mane.timer.new(10, function()
-                        if bullet then
-                            bullet:remove()
-                        end
-                        if bulletTimer then
-                            bulletTimer:cancel()
-                            bulletTimer = nil
-                        end
-                    end, 1, 'Game')
                 end
             end
         end)
