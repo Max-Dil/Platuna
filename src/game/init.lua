@@ -90,6 +90,15 @@ m.run = function ()
         playerSize = 'big',
         checkpoint = {mane.display.centerX, mane.display.centerY},
         tpMap = {},
+        doors = {
+            doors = {},
+            gold = {},
+            goldMoney = 0,
+            green = {},
+            greenMoney = 0,
+            blue = {},
+            blueMoney = 0,
+        }
     }
     Game = mane.display.game:newGroup()
     Map = Game:newGroup()
@@ -101,7 +110,8 @@ m.run = function ()
     CountEnemy = 0
     CountLevel = 1
 
-    Money = 0
+    local saves = require('saves')
+    Money = saves.load('money', 0)
     MaxMoney = 0
     MoneyText = Game:newPrint('Монет: '..Money, 'res/Venus.ttf', 100, 40, 30)
 
@@ -166,9 +176,19 @@ m.run = function ()
             width = Player.image:getWidth() * 6,
             height = Player.image:getHeight() * 6
         })
-        Player:setFixedRotation(true)
+        Player.body:setFixedRotation(true)
         Player.fixture:setCategory(2)
         Player.fixture:setMask(3)
+
+        m.save.doors = {
+            doors = {},
+            gold = {},
+            goldMoney = 0,
+            green = {},
+            greenMoney = 0,
+            blue = {},
+            blueMoney = 0,
+        }
 
         if m.editor then
             loadMap(m.editor)
@@ -199,7 +219,9 @@ m.run = function ()
             local saves = require('saves')
             if m.currentLevel >= saves.load('level', 1) then
                 saves.save('level', saves.load('level', 1) + 1)
+                saves.save('money', Money)
             end
+
             m.remove()
             Scenes.levels.create()
             return

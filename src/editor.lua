@@ -452,11 +452,16 @@ local function placeBlock(x, y)
             saveBlock()
         end, 'Ввведите текст')
     elseif currentBlock.sheet == 2 and currentBlock.frame == 23 then
-        blockData.body = nil
+        blockData.isSensor = true
         inputNumber(function (num)
             blockData.gravity = num
             saveBlock()
         end, 'Ввведите силу гравитации')
+    elseif currentBlock.sheet == 2 and (currentBlock.frame == 24 or currentBlock.frame == 25) then
+        inputText(function (text)
+            blockData.id = text
+            saveBlock()
+        end, 'Ввведите id двери')
     elseif currentBlock.sheet == 2 and (currentBlock.frame == 22 or currentBlock.frame == 21 or currentBlock.frame == 20 or currentBlock.frame == 42) then
         blockData.body = nil
         inputNumber(function (num)

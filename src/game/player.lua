@@ -91,7 +91,7 @@ local function PlayerFactory()
         width = Player.image:getWidth() * 6,
         height = Player.image:getHeight() * 6
     })
-    Player:setFixedRotation(true)
+    Player.body:setFixedRotation(true)
     Player.fixture:setCategory(2)
     Player.fixture:setMask(3)
 
@@ -177,9 +177,9 @@ local function PlayerFactory()
         World:addBody(bullet, 'dynamic')
         bullet.fixture:setCategory(3)
         bullet.fixture:setMask(2, 3)
-        bullet:setGravityScale(0.3, 0.3)
-        bullet:setFriction(0.1)
-        bullet:setRestitution(0)
+        bullet.body:setGravityScale(0.3, 0.3)
+        bullet.fixture:setFriction(0.1)
+        bullet.fixture:setRestitution(0)
 
         local angle = math.atan2(y - Player.y, x - Player.x)
         local bulletSpeed = Player.weapons[Player.weapon].bulletSpeed or 600
@@ -191,13 +191,13 @@ local function PlayerFactory()
         local lifetimeSeconds = Player.weapons[Player.weapon].bulletLifetime * 0.0167
         local elapsedTime = 0
 
-        bullet:setLinearVelocity(bulletVelocityX, bulletVelocityY)
+        bullet.body:setLinearVelocity(bulletVelocityX, bulletVelocityY)
 
         local bulletTimer
         bulletTimer = mane.timer.new(0, function(dt)
             elapsedTime = elapsedTime + dt
 
-            local vx, vy = bullet:getLinearVelocity()
+            local vx, vy = bullet.body:getLinearVelocity()
             local currentSpeed = math.sqrt(vx^2 + vy^2)
             local alpha = math.max(0.6, currentSpeed / bullet.initialSpeed)
             bullet.color[4] = alpha
@@ -217,7 +217,7 @@ local function PlayerFactory()
             if e.target ~= Player and e.other ~= Player then
                 local target = e.target.name == 'enemy' and e.target or e.other.name == 'enemy' and e.other
                 if target then
-                    local vx, vy = bullet:getLinearVelocity()
+                    local vx, vy = bullet.body:getLinearVelocity()
                     local currentSpeed = math.sqrt(vx^2 + vy^2)
                     local damageRatio = currentSpeed > 0 and math.min(1, currentSpeed / bullet.initialSpeed) or 0
                     local scaledDamage = math.floor(bullet.damage * damageRatio)

@@ -14,6 +14,9 @@ function mane.load()
     if saves.load('level', false) == false then
         saves.save('level', 1)
     end
+    if saves.load('money', false) == false then
+        saves.save('money', 0)
+    end
 
     Scenes = {
         menu = require('src.menu'),

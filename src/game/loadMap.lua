@@ -158,9 +158,9 @@ do
         World:addBody(bullet, 'dynamic')
         bullet.fixture:setCategory(5)
         bullet.fixture:setMask(4, 5)
-        bullet:setGravityScale(0.3, 0.3)
-        bullet:setFriction(1000)
-        bullet:setRestitution(0)
+        bullet.body:setGravityScale(0.3, 0.3)
+        bullet.fixture:setFriction(1000)
+        bullet.fixture:setRestitution(0)
     
         local angle = math.atan2(y - image.y, x - image.x)
         local angleDegrees = (angle / math.pi) * 180
@@ -186,13 +186,13 @@ do
         local lifetimeSeconds = weapons[elem.weapon].bulletLifetime / 60
         local elapsedTime = 0
     
-        bullet:setLinearVelocity(bulletVelocityX, bulletVelocityY)
+        bullet.body:setLinearVelocity(bulletVelocityX, bulletVelocityY)
 
         local bulletTimer
         bulletTimer = mane.timer.new(0, function(dt)
             elapsedTime = elapsedTime + dt
 
-            local vx, vy = bullet:getLinearVelocity()
+            local vx, vy = bullet.body:getLinearVelocity()
             local currentSpeed = math.sqrt(vx^2 + vy^2)
             local alpha = math.max(0.6, currentSpeed / bullet.initialSpeed)
             bullet.color[4] = alpha
@@ -210,7 +210,7 @@ do
                 return false
             end
             if e.target == Player or e.other == Player then
-                local vx, vy = bullet:getLinearVelocity()
+                local vx, vy = bullet.body:getLinearVelocity()
                 local currentSpeed = math.sqrt(vx^2 + vy^2)
                 local damageRatio = currentSpeed > 0 and math.min(1, currentSpeed / bullet.initialSpeed) or 0
                 local scaledDamage = math.floor(bullet.damage * damageRatio)
@@ -230,8 +230,8 @@ do
     
         image.body:setPosition(image.x - 1, image.y)
         local force = weapons[elem.weapon].force
-        local vx, vy = image:getLinearVelocity()
-        image:setLinearVelocity(vx - (math.cos(angle) * force), vy - (math.sin(angle) * force))
+        local vx, vy = image.body:getLinearVelocity()
+        image.body:setLinearVelocity(vx - (math.cos(angle) * force), vy - (math.sin(angle) * force))
         image.body:setPosition(image.x + 1, image.y)
     end
 
@@ -421,6 +421,8 @@ local TILESET_CONFIG = {
                                 height = Player.image:getHeight() * 2.5
                             })
                             Player:setFixedRotation(true)
+                            Player.fixture:setCategory(2)
+                            Player.fixture:setMask(3)
 
                             for i = 1, #Scenes.game.save.isBig, 1 do
                                 Scenes.game.save.isBig[i].fixture:setSensor(false)
@@ -450,7 +452,9 @@ local TILESET_CONFIG = {
                                 width = Player.image:getWidth() * 6,
                                 height = Player.image:getHeight() * 6
                             })
-                            Player:setFixedRotation(true)
+                            Player.body:setFixedRotation(true)
+                            Player.fixture:setCategory(2)
+                            Player.fixture:setMask(3)
 
                             for i = 1, #Scenes.game.save.isBig, 1 do
                                 Scenes.game.save.isBig[i].fixture:setSensor(true)
@@ -548,7 +552,7 @@ local TILESET_CONFIG = {
         end},
         [17] = {main = function (image, xScale, yScale, elem)
             image.isVisible = false
-            Level:newPrint(elem.text, 'Venus.ttf', image.x, image.y, 25)
+            Level:newPrint(elem.text, 'res/Venus.ttf', image.x, image.y, 25)
         end},
         [20] = {main = function(image, xScale, yScale, elem)
             local distance = elem.distance or 1000
@@ -567,7 +571,7 @@ local TILESET_CONFIG = {
                 World:addBody(bullet, 'dynamic')
                 bullet.fixture:setCategory(5)
                 bullet.fixture:setMask(4, 5)
-                bullet:setGravityScale(0, 0)
+                bullet.body:setGravityScale(0, 0)
 
                 local angle = math.rad(0)
                 local bulletVelocityX = math.cos(angle) * bulletSpeed
@@ -637,7 +641,7 @@ local TILESET_CONFIG = {
                 World:addBody(bullet, 'dynamic')
                 bullet.fixture:setCategory(5)
                 bullet.fixture:setMask(4, 5)
-                bullet:setGravityScale(0, 0)
+                bullet.body:setGravityScale(0, 0)
 
                 local angle = math.rad(180)
                 local bulletVelocityX = math.cos(angle) * bulletSpeed
@@ -707,7 +711,7 @@ local TILESET_CONFIG = {
                 World:addBody(bullet, 'dynamic')
                 bullet.fixture:setCategory(5)
                 bullet.fixture:setMask(4, 5)
-                bullet:setGravityScale(0, 0)
+                bullet.body:setGravityScale(0, 0)
 
                 local angle = math.rad(((elem.angle or 0) + 270) % 360)
                 local bulletVelocityX = math.cos(angle) * bulletSpeed
@@ -777,6 +781,24 @@ local TILESET_CONFIG = {
                 end
             end)
         end},
+        [24] = {main=function (image, xScale, yScale, elem)
+            image.fixture:setSensor(true)
+            image:addEvent('collision', function(e)
+                if e.phase == 'began' and (e.other == Player or e.target == Player) then
+                    if Scenes.game.save.doors.doors[elem.id or 0] then
+                        Scenes.game.save.doors.doors[elem.id or 0]:remove()
+                        Scenes.game.save.doors.doors[elem.id or 0] = nil
+
+                        image:remove()
+                        image = nil
+                    end
+                    return true
+                end
+            end)
+        end},
+        [25] = {main=function (image, xScale, yScale, elem)
+            Scenes.game.save.doors.doors[elem.id or 0] = image
+        end},
         [26] = {main = function(image)
             CountEnemy = CountEnemy + 1
             image:addEvent('collision', function(e)
@@ -807,7 +829,7 @@ local TILESET_CONFIG = {
         [27] = {main = function(image, xScale, yScale, elem)
             CountEnemy = CountEnemy + 1
             image.name = 'enemy'
-            image:setFixedRotation(true)
+            image.body:setFixedRotation(true)
             image.fixture:setCategory(4)
             image.fixture:setMask(5)
             
@@ -836,7 +858,11 @@ local TILESET_CONFIG = {
                 image.moveTimer:setTime(shootDelay * (1000 - (image.maxHealth - image.health)/10))
             end, 0, 'Game')
         end},
-        [31] = {main = function (image)
+        [30] = {main=function (image, xScale, yScale, elem)
+            table.insert(Scenes.game.save.doors.gold, image)
+        end},
+        [31] = {main = function (image, xScale, yScale, elem)
+            Scenes.game.save.doors.goldMoney = Scenes.game.save.doors.goldMoney + 1
             image:addEvent('collision', function (e)
                 if e.phase == 'began' then
                     if e.other == Player or e.target == Player then
@@ -844,6 +870,55 @@ local TILESET_CONFIG = {
                         MoneyText.text = 'Монет: '..Money
                         image:remove()
                         image = nil
+                        Scenes.game.save.doors.goldMoney = Scenes.game.save.doors.goldMoney - 1
+                        if Scenes.game.save.doors.goldMoney <= 0 then
+                            for i = 1, #Scenes.game.save.doors.gold, 1 do
+                                Scenes.game.save.doors.gold[i]:remove()
+                                Scenes.game.save.doors.gold[i] = nil
+                            end
+                        end
+                    end
+                end
+            end)
+        end},
+        [32] = {main=function (image, xScale, yScale, elem)
+            table.insert(Scenes.game.save.doors.blue, image)
+        end},
+        [33] = {main = function (image, xScale, yScale, elem)
+            Scenes.game.save.doors.blueMoney = Scenes.game.save.doors.blueMoney + 1
+            image:addEvent('collision', function (e)
+                if e.phase == 'began' then
+                    if e.other == Player or e.target == Player then
+                        image:remove()
+                        image = nil
+                        Scenes.game.save.doors.blueMoney = Scenes.game.save.doors.blueMoney - 1
+                        if Scenes.game.save.doors.blueMoney <= 0 then
+                            for i = 1, #Scenes.game.save.doors.blue, 1 do
+                                Scenes.game.save.doors.blue[i]:remove()
+                                Scenes.game.save.doors.blue[i] = nil
+                            end
+                        end
+                    end
+                end
+            end)
+        end},
+        [34] = {main=function (image, xScale, yScale, elem)
+            table.insert(Scenes.game.save.doors.green, image)
+        end},
+        [35] = {main = function (image, xScale, yScale, elem)
+            Scenes.game.save.doors.greenMoney = Scenes.game.save.doors.greenMoney + 1
+            image:addEvent('collision', function (e)
+                if e.phase == 'began' then
+                    if e.other == Player or e.target == Player then
+                        image:remove()
+                        image = nil
+                        Scenes.game.save.doors.greenMoney = Scenes.game.save.doors.greenMoney - 1
+                        if Scenes.game.save.doors.greenMoney <= 0 then
+                            for i = 1, #Scenes.game.save.doors.green, 1 do
+                                Scenes.game.save.doors.green[i]:remove()
+                                Scenes.game.save.doors.green[i] = nil
+                            end
+                        end
                     end
                 end
             end)
@@ -871,7 +946,7 @@ local TILESET_CONFIG = {
                 World:addBody(bullet, 'dynamic')
                 bullet.fixture:setCategory(5)
                 bullet.fixture:setMask(4, 5)
-                bullet:setGravityScale(0, 0)
+                bullet.body:setGravityScale(0, 0)
 
                 local targetAngle = math.atan2(Player.y - image.y, Player.x - image.x) + math.rad(angleOffset)
                 local bulletVelocityX = math.cos(targetAngle) * bulletSpeed
@@ -936,8 +1011,8 @@ local TILESET_CONFIG = {
             image.name = 'enemy'
             image.enemyType = 'ghost'
 
-            image:setGravityScale(0, 0)
-            image:setFixedRotation(true)
+            image.body:setGravityScale(0, 0)
+            image.body:setFixedRotation(true)
             image.fixture:setCategory(4)
             image.fixture:setMask(5)
             
@@ -1051,7 +1126,7 @@ local function load(map)
                 end
 
                 if frameConfig.restitution then
-                    image:setRestitution(frameConfig.restitution)
+                    image.fixture:setRestitution(frameConfig.restitution)
                 end
 
                 if frameConfig.main then
