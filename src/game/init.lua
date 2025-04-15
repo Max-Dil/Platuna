@@ -180,6 +180,8 @@ m.run = function ()
         Player.fixture:setCategory(2)
         Player.fixture:setMask(3)
 
+        Scenes.game.save.isBig = {}
+        Scenes.game.save.isMin = {}
         m.save.doors = {
             doors = {},
             gold = {},
@@ -196,7 +198,7 @@ m.run = function ()
             loadMap(m.level)
         end
         if m.save.checkpoint then
-            Player.x, Player.y = m.save.checkpoint[1], m.save.checkpoint[2]
+            Player.x, Player.y = m.save.checkpoint[1], m.save.checkpoint[2] - 40
         end
         Player.hpText:toFront()
         Money = MaxMoney

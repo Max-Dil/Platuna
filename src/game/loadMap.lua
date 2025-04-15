@@ -425,10 +425,31 @@ local TILESET_CONFIG = {
                             Player.fixture:setMask(3)
 
                             for i = 1, #Scenes.game.save.isBig, 1 do
-                                Scenes.game.save.isBig[i].fixture:setSensor(false)
+                                local obj = Scenes.game.save.isBig[i]
+                                if obj and obj.body then
+                                    obj:removeBody()
+                                    World:addBody(obj, 'static', {
+                                        shape = "rect",
+                                        width = 8 * obj.xScale,
+                                        height = 8 * obj.yScale
+                                    })
+                                    obj.fixture:setCategory(1)
+                                    obj.fixture:setSensor(true)
+                                end
                             end
+
                             for i = 1, #Scenes.game.save.isMin, 1 do
-                                Scenes.game.save.isMin[i].fixture:setSensor(true)
+                                local obj = Scenes.game.save.isMin[i]
+                                if obj and obj.body then
+                                    obj:removeBody()
+                                    World:addBody(obj, 'static', {
+                                        shape = "rect",
+                                        width = 8 * obj.xScale,
+                                        height = 8 * obj.yScale
+                                    })
+                                    obj.fixture:setCategory(1)
+                                    obj.fixture:setSensor(false)
+                                end
                             end
                         end, 1, 'Game')
                     end
@@ -457,10 +478,31 @@ local TILESET_CONFIG = {
                             Player.fixture:setMask(3)
 
                             for i = 1, #Scenes.game.save.isBig, 1 do
-                                Scenes.game.save.isBig[i].fixture:setSensor(true)
+                                local obj = Scenes.game.save.isBig[i]
+                                if obj and obj.body then
+                                    obj:removeBody()
+                                    World:addBody(obj, 'static', {
+                                        shape = "rect",
+                                        width = 8 * obj.xScale,
+                                        height = 8 * obj.yScale
+                                    })
+                                    obj.fixture:setCategory(1)
+                                    obj.fixture:setSensor(true)
+                                end
                             end
+
                             for i = 1, #Scenes.game.save.isMin, 1 do
-                                Scenes.game.save.isMin[i].fixture:setSensor(false)
+                                local obj = Scenes.game.save.isMin[i]
+                                if obj and obj.body then
+                                    obj:removeBody()
+                                    World:addBody(obj, 'static', {
+                                        shape = "rect",
+                                        width = 8 * obj.xScale,
+                                        height = 8 * obj.yScale
+                                    })
+                                    obj.fixture:setCategory(1)
+                                    obj.fixture:setSensor(false)
+                                end
                             end
                         end, 1, 'Game')
                     end
